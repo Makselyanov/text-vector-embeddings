@@ -693,6 +693,32 @@ describe("Plugin tests", () => {
     expect(getCommentMock).not.toHaveBeenCalled();
   });
 
+  it("When commandHandler receives an invalid annotate URL, it should reject it before fetching the comment", async () => {
+    createIssue("Annotate target", "annotate", "Annotate Target", 24, { login: "test", id: 1 }, "open", null, STRINGS.TEST_REPO, STRINGS.USER_1);
+    const { context, errorSpy } = createContext("Command payload", 1, 1, 2, "commandAnnotate", "annotate");
+    context.command = {
+      name: "annotate",
+      parameters: {
+        commentUrl: "ftp://github.com/ubiquity-os-marketplace/text-vector-embeddings/issues/24#issuecomment-2535532258",
+        scope: "repo",
+      },
+    } as Context["command"];
+    const getCommentMock = mock(async () => ({ data: annotateComment })) as unknown as typeof octokit.rest.issues.getComment;
+    context.octokit.rest.issues.getComment = getCommentMock;
+
+    let thrown: unknown;
+    try {
+      await runPlugin(context);
+    } catch (error) {
+      thrown = error;
+    }
+
+    const errorMessages = errorSpy.mock.calls.map(([message]) => String(message));
+    const errorText = [String(thrown), ...errorMessages].join("\n");
+    expect(errorText.includes("Invalid comment URL")).toBe(true);
+    expect(getCommentMock).not.toHaveBeenCalled();
+  });
+
   function createContext(
     commentBody: string = "Hello, world!",
     repoId: number = 1,

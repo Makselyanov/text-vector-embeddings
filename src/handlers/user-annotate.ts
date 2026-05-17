@@ -63,12 +63,13 @@ function parseCommentIdFromUrl(context: Context<"issue_comment.created">, commen
   }
 
   const hostname = parsedUrl.hostname.toLowerCase();
-  if (hostname !== "github.com" && hostname !== "www.github.com") {
+  if ((parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") || (hostname !== "github.com" && hostname !== "www.github.com")) {
     throw context.logger.error("Invalid comment URL");
   }
 
-  const [owner, repo, resource, resourceId] = parsedUrl.pathname.split("/").filter(Boolean);
-  if (!owner || !repo || (resource !== "issues" && resource !== "pull") || !resourceId) {
+  const pathSegments = parsedUrl.pathname.split("/").filter(Boolean);
+  const [owner, repo, resource, resourceId] = pathSegments;
+  if (pathSegments.length !== 4 || !owner || !repo || (resource !== "issues" && resource !== "pull") || !/^\d+$/.test(resourceId)) {
     throw context.logger.error("Invalid comment URL");
   }
 
